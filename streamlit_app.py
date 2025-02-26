@@ -16,15 +16,6 @@ from email import policy
 from email.parser import BytesParser
 import time
 from datetime import datetime
-import nltk
-from nltk import ne_chunk, pos_tag, word_tokenize
-from nltk.tree import Tree
-
-# Download required NLTK data files
-nltk.download('punkt')
-nltk.download('maxent_ne_chunker')
-nltk.download('words')
-nltk.download('averaged_perceptron_tagger')
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
@@ -63,7 +54,6 @@ features = {
     "conflict_detection": True,
     "argument_mining": True,
     "metadata_extraction": True,
-    "ner_based_response": True,
 }
 
 st.sidebar.title("Feature Selection")
@@ -165,7 +155,7 @@ def analyze_phishing_links(email_content):
 
 def detect_sensitive_information(email_content):
     sensitive_info_patterns = {
-        "phone_number": r"(\+?\d{1,2}\s?)?(\(?\d{3}\)?|\d{3})[\s\-]?\d{3}[\s\-]?\d{4}",
+        "phone_number": r"(\+?\d{1,2}\s?)?(\(?\d{3}\)?|\d{3})[\s\-]?\d{3}[\\s\-]?\d{4}",
         "email_address": r"[\w\.-]+@[\w\.-]+\.\w+",
         "credit_card": r"\b(?:\d[ -]*?){13,16}\b"
     }
@@ -219,16 +209,6 @@ def extract_email_metadata(email_file):
     except Exception as e:
         return f"Error extracting metadata: {e}"
 
-def extract_entities(email_content):
-    chunked = ne_chunk(pos_tag(word_tokenize(email_content)))
-    entities = []
-    for chunk in chunked:
-        if isinstance(chunk, Tree):
-            entity = " ".join([token for token, pos in chunk.leaves()])
-            entity_type = chunk.label()
-            entities.append((entity, entity_type))
-    return entities
-
 def countdown_timer(duration):
     with st.spinner("Processing..."):
         for i in range(duration, 0, -1):
@@ -279,10 +259,6 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
                         email_metadata = extract_email_metadata(uploaded_email_file)
                     else:
                         email_metadata = None
-
-                    if features["ner_based_response"]:
-                        entities = extract_entities(email_content)
-                        selected_entity = st.selectbox("Select an entity to respond to:", [ent[0] for ent in entities])
 
                     summary = future_summary.result() if future_summary else None
                     response = future_response.result() if future_response else None
