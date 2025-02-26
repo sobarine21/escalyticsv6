@@ -16,7 +16,14 @@ from email import policy
 from email.parser import BytesParser
 import time
 from datetime import datetime
-import spacy
+import nltk
+from nltk import ne_chunk, pos_tag, word_tokenize
+from nltk.tree import Tree
+
+nltk.download('punkt')
+nltk.download('maxent_ne_chunker')
+nltk.download('words')
+nltk.download('averaged_perceptron_tagger')
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
@@ -122,8 +129,6 @@ scenario_options = [
 
 selected_scenario = st.selectbox("Select a scenario for suggested response:", scenario_options)
 
-nlp = spacy.load("en_core_web_sm")
-
 @st.cache_data(ttl=3600)
 def get_ai_response(prompt, email_content):
     try:
@@ -214,8 +219,13 @@ def extract_email_metadata(email_file):
         return f"Error extracting metadata: {e}"
 
 def extract_entities(email_content):
-    doc = nlp(email_content)
-    entities = [(ent.text, ent.label_) for ent in doc.ents]
+    chunked = ne_chunk(pos_tag(word_tokenize(email_content)))
+    entities = []
+    for chunk in chunked:
+        if isinstance(chunk, Tree):
+            entity = " ".join([token for token, pos in chunk.leaves()])
+            entity_type = chunk.label()
+            entities.append((entity, entity_type))
     return entities
 
 def countdown_timer(duration):
