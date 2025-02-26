@@ -20,6 +20,7 @@ import nltk
 from nltk import ne_chunk, pos_tag, word_tokenize
 from nltk.tree import Tree
 
+# Download required NLTK data files
 nltk.download('punkt')
 nltk.download('maxent_ne_chunker')
 nltk.download('words')
