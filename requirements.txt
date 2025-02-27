@@ -7,6 +7,4 @@ docx2txt
 pypdf2 
 cryptography
 openpyxl
-python-pptx
-odf
-odf.opendocument
+
