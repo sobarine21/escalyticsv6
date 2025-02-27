@@ -16,6 +16,9 @@ from email import policy
 from email.parser import BytesParser
 import time
 from datetime import datetime
+import openpyxl
+import pptx
+from odf import text, opendocument
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
@@ -63,7 +66,7 @@ for feature in features:
 email_content = st.text_area("📩 Paste your email content here:", height=200)
 MAX_EMAIL_LENGTH = 2000
 
-uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg"])
+uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg", "xlsx", "pptx", "odt"])
 uploaded_email_file = st.file_uploader("📧 Upload email for thread analysis:", type=["eml", "msg"])
 
 scenario_options = [
@@ -187,6 +190,25 @@ def analyze_attachment(file):
         elif file.type in ["message/rfc822", "application/vnd.ms-outlook"]:
             msg = BytesParser(policy=policy.default).parsebytes(file.getvalue())
             return msg.get_body(preferencelist=('plain')).get_content()
+        elif file.type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+            workbook = openpyxl.load_workbook(file)
+            sheet = workbook.active
+            text = ""
+            for row in sheet.iter_rows(values_only=True):
+                text += " ".join([str(cell) for cell in row if cell is not None]) + "\n"
+            return text
+        elif file.type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+            presentation = pptx.Presentation(file)
+            text = ""
+            for slide in presentation.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        text += shape.text + "\n"
+            return text
+        elif file.type == "application/vnd.oasis.opendocument.text":
+            odt_file = opendocument.load(file)
+            texts = odt_file.getElementsByType(text.P)
+            return "\n".join([text_node.firstChild.data for text_node in texts if text_node.firstChild])
         else:
             return "Unsupported file type."
     except Exception as e:
