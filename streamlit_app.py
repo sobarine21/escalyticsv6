@@ -16,6 +16,9 @@ from email import policy
 from email.parser import BytesParser
 import time
 from datetime import datetime
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
@@ -215,6 +218,28 @@ def countdown_timer(duration):
             st.write(f"⏳ {i} seconds remaining...")
             time.sleep(1)
 
+def visualize_argument_mining(argument_mining):
+    arguments = argument_mining.split("\n")
+    arguments = [arg for arg in arguments if arg.strip()]
+    data = pd.DataFrame({"Argument": arguments})
+    plt.figure(figsize=(10, 6))
+    sns.countplot(y="Argument", data=data, palette="viridis")
+    plt.title("Argument Mining Results")
+    plt.xlabel("Count")
+    plt.ylabel("Arguments")
+    st.pyplot(plt)
+
+def visualize_conflict_detection(conflict_detection):
+    conflicts = conflict_detection.split("\n")
+    conflicts = [conflict for conflict in conflicts if conflict.strip()]
+    data = pd.DataFrame({"Conflict": conflicts})
+    plt.figure(figsize=(10, 6))
+    sns.countplot(y="Conflict", data=data, palette="Reds")
+    plt.title("Conflict Detection Results")
+    plt.xlabel("Count")
+    plt.ylabel("Conflicts")
+    st.pyplot(plt)
+
 if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 Generate Insights"):
     try:
         countdown_timer(5)
@@ -341,14 +366,17 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
                 if conflict_detection:
                     st.subheader("🚨 Conflict Detection")
                     st.write(conflict_detection)
+                    visualize_conflict_detection(conflict_detection)
 
                 if argument_mining:
                     st.subheader("💬 Argument Mining")
                     st.write(argument_mining)
+                    visualize_argument_mining(argument_mining)
 
                 if email_metadata:
                     st.subheader("📅 Email Metadata")
-                    st.json(email_metadata)
+                    metadata_df = pd.DataFrame(list(email_metadata.items()), columns=["Field", "Value"])
+                    st.table(metadata_df)
 
                 if features["export"]:
                     export_data = {
