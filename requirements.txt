@@ -9,3 +9,4 @@ cryptography
 openpyxl
 python-pptx
 odf
+odf.opendocument
