@@ -16,10 +16,6 @@ from email import policy
 from email.parser import BytesParser
 import time
 from datetime import datetime
-import openpyxl
-from pptx import Presentation
-from odf.opendocument import load
-from odf.text import P
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
@@ -67,7 +63,7 @@ for feature in features:
 email_content = st.text_area("📩 Paste your email content here:", height=200)
 MAX_EMAIL_LENGTH = 2000
 
-uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg", "xlsx", "pptx", "odt"])
+uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg"])
 uploaded_email_file = st.file_uploader("📧 Upload email for thread analysis:", type=["eml", "msg"])
 
 scenario_options = [
@@ -191,25 +187,6 @@ def analyze_attachment(file):
         elif file.type in ["message/rfc822", "application/vnd.ms-outlook"]:
             msg = BytesParser(policy=policy.default).parsebytes(file.getvalue())
             return msg.get_body(preferencelist=('plain')).get_content()
-        elif file.type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-            workbook = openpyxl.load_workbook(file)
-            sheet = workbook.active
-            text = ""
-            for row in sheet.iter_rows(values_only=True):
-                text += " ".join([str(cell) for cell in row if cell is not None]) + "\n"
-            return text
-        elif file.type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-            presentation = Presentation(file)
-            text = ""
-            for slide in presentation.slides:
-                for shape in slide.shapes:
-                    if hasattr(shape, "text"):
-                        text += shape.text + "\n"
-            return text
-        elif file.type == "application/vnd.oasis.opendocument.text":
-            odt_file = load(file)
-            texts = odt_file.getElementsByType(P)
-            return "\n".join([text_node.firstChild.data for text_node in texts if text_node.firstChild])
         else:
             return "Unsupported file type."
     except Exception as e:
@@ -237,66 +214,6 @@ def countdown_timer(duration):
         for i in range(duration, 0, -1):
             st.write(f"⏳ {i} seconds remaining...")
             time.sleep(1)
-
-def create_dashboard(data):
-    st.header("📊 Results Dashboard")
-    if data.get("summary"):
-        st.subheader("📌 Email Summary")
-        st.write(data["summary"])
-    if data.get("response"):
-        st.subheader("✉️ Suggested Response")
-        st.write(data["response"])
-    if data.get("highlights"):
-        st.subheader("🔑 Key Highlights")
-        st.write(data["highlights"])
-    if data.get("sentiment"):
-        st.subheader("💬 Sentiment Analysis")
-        sentiment = data["sentiment"]
-        sentiment_label = "Positive" if sentiment > 0 else "Negative" if sentiment < 0 else "Neutral"
-        st.write(f"**Sentiment:** {sentiment_label} (Polarity: {sentiment:.2f})")
-    if data.get("tone"):
-        st.subheader("🎭 Email Tone")
-        st.write(data["tone"])
-    if data.get("tasks"):
-        st.subheader("📝 Actionable Tasks")
-        st.write(data["tasks"])
-    if data.get("subject_recommendation"):
-        st.subheader("📬 Subject Line Recommendation")
-        st.write(data["subject_recommendation"])
-    if data.get("clarity_score"):
-        st.subheader("🔍 Email Clarity Score")
-        st.write(data["clarity_score"])
-    if data.get("complexity_reduction"):
-        st.subheader("🔽 Simplified Explanation")
-        st.write(data["complexity_reduction"])
-    if data.get("scenario_response"):
-        st.subheader("📜 Scenario-Based Suggested Response")
-        st.write(f"**{selected_scenario}:**")
-        st.write(data["scenario_response"])
-    if data.get("attachment_analysis"):
-        st.subheader("📎 Attachment Analysis")
-        st.write(data["attachment_analysis"])
-    if data.get("phishing_links"):
-        st.subheader("⚠️ Phishing Links Detected")
-        st.write(data["phishing_links"])
-    if data.get("sensitive_info"):
-        st.subheader("⚠️ Sensitive Information Detected")
-        st.json(data["sensitive_info"])
-    if data.get("confidentiality"):
-        st.subheader("🔐 Confidentiality Rating")
-        st.write(f"Confidentiality Rating: {data['confidentiality']}/5")
-    if data.get("bias_detection"):
-        st.subheader("⚖️ Bias Detection")
-        st.write(data["bias_detection"])
-    if data.get("conflict_detection"):
-        st.subheader("🚨 Conflict Detection")
-        st.write(data["conflict_detection"])
-    if data.get("argument_mining"):
-        st.subheader("💬 Argument Mining")
-        st.write(data["argument_mining"])
-    if data.get("metadata"):
-        st.subheader("📅 Email Metadata")
-        st.json(data["metadata"])
 
 if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 Generate Insights"):
     try:
@@ -358,16 +275,87 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
                     conflict_detection = future_conflict_detection.result() if future_conflict_detection else None
                     argument_mining = future_argument_mining.result() if future_argument_mining else None
 
-                    results_data = {
+                if summary:
+                    st.subheader("📌 Email Summary")
+                    st.write(summary)
+
+                if response:
+                    st.subheader("✉️ Suggested Response")
+                    st.write(response)
+
+                if highlights:
+                    st.subheader("🔑 Key Highlights")
+                    st.write(highlights)
+
+                if features["sentiment"]:
+                    st.subheader("💬 Sentiment Analysis")
+                    sentiment = get_sentiment(email_content)
+                    sentiment_label = "Positive" if sentiment > 0 else "Negative" if sentiment < 0 else "Neutral"
+                    st.write(f"**Sentiment:** {sentiment_label} (Polarity: {sentiment:.2f})")
+
+                if tone:
+                    st.subheader("🎭 Email Tone")
+                    st.write(tone)
+
+                if tasks:
+                    st.subheader("📝 Actionable Tasks")
+                    st.write(tasks)
+
+                if subject_recommendation:
+                    st.subheader("📬 Subject Line Recommendation")
+                    st.write(subject_recommendation)
+
+                if clarity_score:
+                    st.subheader("🔍 Email Clarity Score")
+                    st.write(clarity_score)
+
+                if complexity_reduction:
+                    st.subheader("🔽 Simplified Explanation")
+                    st.write(complexity_reduction)
+
+                if scenario_response:
+                    st.subheader("📜 Scenario-Based Suggested Response")
+                    st.write(f"**{selected_scenario}:**")
+                    st.write(scenario_response)
+
+                if attachment_analysis:
+                    st.subheader("📎 Attachment Analysis")
+                    st.write(attachment_analysis)
+
+                if phishing_links:
+                    st.subheader("⚠️ Phishing Links Detected")
+                    st.write(phishing_links)
+
+                if sensitive_info:
+                    st.subheader("⚠️ Sensitive Information Detected")
+                    st.json(sensitive_info)
+
+                if confidentiality:
+                    st.subheader("🔐 Confidentiality Rating")
+                    st.write(f"Confidentiality Rating: {confidentiality}/5")
+
+                if bias_detection:
+                    st.subheader("⚖️ Bias Detection")
+                    st.write(bias_detection)
+
+                if conflict_detection:
+                    st.subheader("🚨 Conflict Detection")
+                    st.write(conflict_detection)
+
+                if argument_mining:
+                    st.subheader("💬 Argument Mining")
+                    st.write(argument_mining)
+
+                if email_metadata:
+                    st.subheader("📅 Email Metadata")
+                    st.json(email_metadata)
+
+                if features["export"]:
+                    export_data = {
                         "summary": summary,
                         "response": response,
                         "highlights": highlights,
-                        "sentiment": get_sentiment(email_content),
-                        "tone": tone,
-                        "tasks": tasks,
-                        "subject_recommendation": subject_recommendation,
                         "clarity_score": clarity_score,
-                        "readability_score": readability_score,
                         "complexity_reduction": complexity_reduction,
                         "scenario_response": scenario_response,
                         "attachment_analysis": attachment_analysis,
@@ -379,14 +367,10 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
                         "argument_mining": argument_mining,
                         "metadata": email_metadata,
                     }
-
-                create_dashboard(results_data)
-
-                if features["export"]:
-                    export_json = json.dumps(results_data, indent=4)
+                    export_json = json.dumps(export_data, indent=4)
                     st.download_button("📥 Download JSON", data=export_json, file_name="analysis.json", mime="application/json")
 
-                    pdf_data = export_pdf(json.dumps(results_data, indent=4))
+                    pdf_data = export_pdf(json.dumps(export_data, indent=4))
                     st.download_button("📥 Download PDF", data=pdf_data, file_name="analysis.pdf", mime="application/pdf")
 
     except Exception as e:
