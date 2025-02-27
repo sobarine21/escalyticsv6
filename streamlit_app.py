@@ -65,7 +65,7 @@ for feature in features:
     features[feature] = st.sidebar.checkbox(f"Enable {feature.replace('_', ' ').title()}", value=features[feature])
 
 email_content = st.text_area("📩 Paste your email content here:", height=200)
-MAX_EMAIL_LENGTH = 20000
+MAX_EMAIL_LENGTH = 2000
 
 uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg", "xlsx", "pptx", "odt"])
 uploaded_email_file = st.file_uploader("📧 Upload email for thread analysis:", type=["eml", "msg"])
@@ -153,7 +153,7 @@ def analyze_phishing_links(email_content):
     urls = re.findall(r'(https?://\S+)', email_content)
     for url in urls:
         for keyword in phishing_keywords:
-            if keyword.lower() in url.lower()):
+            if keyword.lower() in url.lower():
                 phishing_links.append(url)
     return phishing_links
 
