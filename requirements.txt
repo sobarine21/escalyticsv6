@@ -7,4 +7,5 @@ docx2txt
 pypdf2 
 cryptography
 openpyxl
-
+pandas
+matplotlib
