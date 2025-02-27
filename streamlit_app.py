@@ -16,8 +16,6 @@ from email import policy
 from email.parser import BytesParser
 import time
 from datetime import datetime
-from pptx import Presentation
-from openpyxl import load_workbook
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
@@ -65,7 +63,7 @@ for feature in features:
 email_content = st.text_area("📩 Paste your email content here:", height=200)
 MAX_EMAIL_LENGTH = 2000
 
-uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg", "pptx", "xlsx"])
+uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg"])
 uploaded_email_file = st.file_uploader("📧 Upload email for thread analysis:", type=["eml", "msg"])
 
 scenario_options = [
@@ -151,7 +149,7 @@ def analyze_phishing_links(email_content):
     urls = re.findall(r'(https?://\S+)', email_content)
     for url in urls:
         for keyword in phishing_keywords:
-            if keyword.lower() in url.lower()):
+            if keyword.lower() in url.lower():
                 phishing_links.append(url)
     return phishing_links
 
@@ -189,22 +187,6 @@ def analyze_attachment(file):
         elif file.type in ["message/rfc822", "application/vnd.ms-outlook"]:
             msg = BytesParser(policy=policy.default).parsebytes(file.getvalue())
             return msg.get_body(preferencelist=('plain')).get_content()
-        elif file.type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-            prs = Presentation(file)
-            text = ""
-            for slide in prs.slides:
-                for shape in slide.shapes:
-                    if hasattr(shape, "text"):
-                        text += shape.text + "\n"
-            return text
-        elif file.type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-            wb = load_workbook(file)
-            text = ""
-            for sheet in wb.sheetnames:
-                ws = wb[sheet]
-                for row in ws.iter_rows(values_only=True):
-                    text += "\t".join([str(cell) for cell in row]) + "\n"
-            return text
         else:
             return "Unsupported file type."
     except Exception as e:
