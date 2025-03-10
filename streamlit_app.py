@@ -224,11 +224,11 @@ def extract_email_metadata(email_file):
     except Exception as e:
         return f"Error extracting metadata: {e}"
 
-def countdown_timer(duration):
-    with st.spinner("Processing..."):
-        for i in range(duration, 0, -1):
-            st.write(f"⏳ {i} seconds remaining...")
-            time.sleep(1)
+def progress_bar(duration):
+    progress = st.progress(0)
+    for i in range(duration):
+        time.sleep(1)
+        progress.progress((i + 1) / duration)
 
 def visualize_argument_mining(argument_mining):
     arguments = argument_mining.split("\n")
@@ -254,7 +254,7 @@ def visualize_conflict_detection(conflict_detection):
 
 if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 Generate Insights"):
     try:
-        countdown_timer(5)
+        progress_bar(5)
 
         if uploaded_email_file:
             msg = BytesParser(policy=policy.default).parsebytes(uploaded_email_file.getvalue())
